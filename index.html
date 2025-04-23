@@ -25,6 +25,13 @@
             border-radius: 4px;
             resize: vertical;
         }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
         button {
             padding: 10px 20px;
             background-color: #007bff;
@@ -37,58 +44,114 @@
         button:hover {
             background-color: #0056b3;
         }
-        .output {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            white-space: pre-wrap;
-            font-family: monospace;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-        .copy-success {
-            color: green;
-            margin-left: 10px;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .loading {
             display: none;
+            margin-top: 20px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Job Posting Parser</h1>
-        <p>Paste the job posting content below:</p>
-        <textarea id="jobPostingInput" placeholder="Paste job posting content here..."></textarea>
-        <button id="generatePrompt">Generate Prompt</button>
-        <div class="output" id="output" style="display: none;">
-            <h3>Generated Prompt:</h3>
-            <pre id="promptText"></pre>
-            <button id="copyButton">Copy to Clipboard</button>
-            <span id="copySuccess" class="copy-success">Copied!</span>
+        <p>Enter the job posting URL or paste the content below:</p>
+        <input type="text" id="jobUrl" placeholder="Enter job posting URL...">
+        <textarea id="jobPostingInput" placeholder="Or paste job posting content here..."></textarea>
+        <button id="parseJob">Parse Job</button>
+        <div class="loading" id="loading">Processing...</div>
+        <div id="results">
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Title</th>
+                        <th>Location</th>
+                        <th>Description</th>
+                        <th>Salary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
         </div>
+        <div id="error" class="error" style="display: none;"></div>
     </div>
 
-    <script src="jobParser.js"></script>
     <script>
-        document.getElementById('generatePrompt').addEventListener('click', () => {
+        document.getElementById('parseJob').addEventListener('click', async () => {
+            const jobUrl = document.getElementById('jobUrl').value;
             const jobPostingText = document.getElementById('jobPostingInput').value;
-            if (!jobPostingText.trim()) {
-                alert('Please paste some job posting content first!');
+            
+            if (!jobUrl && !jobPostingText.trim()) {
+                showError('Please enter a URL or paste job posting content');
                 return;
             }
-            
-            const prompt = createJobPostingPrompt(jobPostingText);
-            document.getElementById('promptText').textContent = prompt;
-            document.getElementById('output').style.display = 'block';
+
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+
+                const response = await fetch('http://localhost:3000/parse-job', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: jobUrl || null,
+                        content: jobPostingText || null
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
         });
 
-        document.getElementById('copyButton').addEventListener('click', () => {
-            const promptText = document.getElementById('promptText').textContent;
-            navigator.clipboard.writeText(promptText).then(() => {
-                const copySuccess = document.getElementById('copySuccess');
-                copySuccess.style.display = 'inline';
-                setTimeout(() => {
-                    copySuccess.style.display = 'none';
-                }, 2000);
-            });
-        });
+        function displayResults(data) {
+            const tbody = document.querySelector('#resultsTable tbody');
+            tbody.innerHTML = ''; // Clear existing rows
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${data.company || 'N/A'}</td>
+                <td>${data.title || 'N/A'}</td>
+                <td>${data.location || 'N/A'}</td>
+                <td>${data.description || 'N/A'}</td>
+                <td>${data.salary || 'N/A'}</td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
     </script>
 </body>
 </html> 
