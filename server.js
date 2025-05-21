@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const { JSDOM } = require('jsdom');
+const path = require('path');
 require('dotenv').config();
 const app = express();
 const port = 3000;
@@ -36,6 +37,7 @@ Please provide only the valid JSON response, no additional text. Also ensure tha
  * @returns {string} The extracted text content
  */
 function extractTextFromHTML(html) {
+    html = String(html); // Ensure html is a string
     const dom = new JSDOM(html);
     const document = dom.window.document;
     
@@ -157,6 +159,11 @@ app.post('/parse-job', async (req, res) => {
       }
 });
 
+// Serve index.html at root
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
-}); 
+});

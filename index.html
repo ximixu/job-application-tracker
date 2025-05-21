@@ -85,6 +85,8 @@
                         <th>Location</th>
                         <th>Description</th>
                         <th>Salary</th>
+                        <th>Date Applied</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -134,8 +136,8 @@
 
         function displayResults(data) {
             const tbody = document.querySelector('#resultsTable tbody');
-            tbody.innerHTML = ''; // Clear existing rows
-            
+            const today = new Date().toISOString().split('T')[0];
+            const statusOptions = ['Applied', 'Rejected', 'OA', 'Interview', 'Offer', 'Accepted'];
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${data.company || 'N/A'}</td>
@@ -143,9 +145,67 @@
                 <td>${data.location || 'N/A'}</td>
                 <td>${data.description || 'N/A'}</td>
                 <td>${data.salary || 'N/A'}</td>
+                <td><input type="date" class="date-applied" value="${today}"></td>
+                <td>
+                    <select class="status-select">
+                        ${statusOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                    </select>
+                </td>
             `;
             tbody.appendChild(row);
+            saveTableToLocalStorage();
         }
+
+        function saveTableToLocalStorage() {
+            const rows = document.querySelectorAll('#resultsTable tbody tr');
+            const data = Array.from(rows).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    company: cells[0].textContent,
+                    title: cells[1].textContent,
+                    location: cells[2].textContent,
+                    description: cells[3].textContent,
+                    salary: cells[4].textContent,
+                    dateApplied: cells[5].querySelector('input').value,
+                    status: cells[6].querySelector('select').value
+                };
+            });
+            localStorage.setItem('jobApplications', JSON.stringify(data));
+        }
+
+        function loadTableFromLocalStorage() {
+            const data = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+            const tbody = document.querySelector('#resultsTable tbody');
+            tbody.innerHTML = '';
+            const statusOptions = ['Applied', 'Rejected', 'OA', 'Interview', 'Offer', 'Accepted'];
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.company || 'N/A'}</td>
+                    <td>${item.title || 'N/A'}</td>
+                    <td>${item.location || 'N/A'}</td>
+                    <td>${item.description || 'N/A'}</td>
+                    <td>${item.salary || 'N/A'}</td>
+                    <td><input type="date" class="date-applied" value="${item.dateApplied}"></td>
+                    <td>
+                        <select class="status-select">
+                            ${statusOptions.map(opt => `<option value="${opt}"${item.status===opt?' selected':''}>${opt}</option>`).join('')}
+                        </select>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Save changes on date/status change
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('date-applied') || e.target.classList.contains('status-select')) {
+                saveTableToLocalStorage();
+            }
+        });
+
+        // Load table on page load
+        window.addEventListener('DOMContentLoaded', loadTableFromLocalStorage);
 
         function showError(message) {
             const errorDiv = document.getElementById('error');
@@ -154,4 +214,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

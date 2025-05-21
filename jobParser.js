@@ -101,8 +101,6 @@ async function callGroqAPI(prompt, apiKey) {
  */
 function displayResults(data) {
     const tbody = document.querySelector('#resultsTable tbody');
-    tbody.innerHTML = ''; // Clear existing rows
-    
     const row = document.createElement('tr');
     row.innerHTML = `
         <td>${data.company || 'N/A'}</td>
@@ -121,4 +119,4 @@ function displayResults(data) {
 
 // const jobPostingText = "Paste job posting text here...";
 // const prompt = createJobPostingPrompt(jobPostingText);
-// console.log(prompt); 
+// console.log(prompt);
